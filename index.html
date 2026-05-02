@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body 
+  { min-height: 100vh; background: #000; color: white; font-family: system-ui, sans-serif; }
+
+  header { padding: 24px 16px 20px; text-align: center; }
+  .badge { display: inline-flex; align-items: center; background: rgba(186,192,200,0.15); border: 1px solid #BAC0C8; padding: 4px 14px; border-radius: 20px; margin-bottom: 12px; }
+  .badge span { color: #BAC0C8; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; }
+  h1 { font-size: 32px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.5px; color: white; }
+  h1 .sp { color: #BAC0C8; }
+  .subtitle { color: rgba(186,192,200,0.7); font-size: 13px; }
+
+  nav {
+  display: flex;
+  justify-content: space-between;
+
+  max-width: 1000px;   /* limita largura */
+  margin: 12px auto;  /* centraliza */
+
+  padding: 6px;
+  border-radius: 999px; /* bem arredondado */
+
+  background: rgba(186,192,200,0.08);
+  backdrop-filter: blur(10px);
+
+  position: sticky;
+  top: 10px;
+  z-index: 200;
+
+  overflow-x: auto;
+
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+}
+
+nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* DESKTOP (mantém teu estilo) */
+nav button {
+  flex: 1;
+  padding: 10px 8px;
+
+  border: none;
+  border-radius: 999px;
+
+  background: transparent;
+  color: rgba(186,192,200,0.6);
+
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+/* MOBILE */
+@media (max-width: 480px) {
+  nav button {
+    flex: 0 0 auto; /* 🔥 chave da responsividade */
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  /* remove emoji no mobile */
+  nav button .emoji {
+    display: none;
+  }
+}
+
+nav button.active {
+  background: rgba(186,192,200,0.2);
+  color: #BAC0C8;
+}
+
+  main { max-width: 600px; margin: 0 auto; padding: 20px 16px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── CARDS BASE ── */
+  .card { background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.2); border-radius: 14px; padding: 16px; }
+  .card + .card { margin-top: 12px; }
+  .card-title { color: #BAC0C8; font-size: 13px; font-weight: 700; margin: 0 0 12px; }
+
+  /* ── MAPA ── */
+  .countdown-box { background: #000; border: 1px solid rgba(186,192,200,0.3); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .countdown-label { color: #BAC0C8; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; margin: 0 0 8px; text-align: center; }
+  .show-title { color: white; font-size: 13px; text-align: center; margin: 0 0 14px; font-weight: 600; }
+  .cd-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .cd-cell { background: rgba(186,192,200,0.05); border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid rgba(186,192,200,0.2); }
+  .cd-num { color: white; font-size: 28px; font-weight: 800; margin: 0; line-height: 1; font-variant-numeric: tabular-nums; }
+  .cd-lbl { color: #BAC0C8; font-size: 10px; margin: 4px 0 0; font-weight: 600; }
+  .mapa-card { background: #000; border: 1px solid rgba(186,192,200,0.2); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .aviso { background: rgba(234,179,8,0.06); border: 1px solid rgba(234,179,8,0.2); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+  .aviso p { color: rgb(253,224,71); font-size: 11px; margin: 0; }
+  .busca-label { color: #BAC0C8; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .busca-dica { color: rgba(186,192,200,0.5); font-size: 11px; margin-bottom: 10px; }
+  .busca-row { display: flex; gap: 8px; }
+  .busca-row input { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(186,192,200,0.3); background: rgba(186,192,200,0.05); color: white; font-size: 13px; outline: none; }
+  .busca-row input::placeholder { color: rgba(186,192,200,0.35); }
+  .busca-row button { padding: 10px 16px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; font-size: 13px; background: #BAC0C8; color: #000; white-space: nowrap; }
+  #map { height: 340px; border-radius: 16px; overflow: hidden; border: 2px solid rgba(186,192,200,0.3); box-shadow: rgba(186,192,200,0.1) 0 0 30px; margin-bottom: 12px; }
+  .legenda { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .leg-item { background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.15); border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 8px; }
+  .leg-item span:first-child { font-size: 18px; }
+  .leg-item span:last-child { color: #BAC0C8; font-size: 12px; }
+  .leg-item.wide { grid-column: span 2; }
+  .rota-hint { background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.15); border-radius: 12px; padding: 12px; text-align: center; }
+  .rota-hint p { color: #BAC0C8; font-size: 13px; margin: 0; }
+
+  /* ── GASTOS ── */
+  .hint { color: #BAC0C8; font-size: 13px; margin-bottom: 12px; }
+  .card-gastos { background: rgba(186,192,200,0.07); border: 1px solid rgba(186,192,200,0.2); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .row-label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .row-label label { color: #BAC0C8; font-size: 13px; font-weight: 600; }
+  .row-label span { color: white; font-size: 13px; font-weight: 700; }
+  input[type=range] { width: 100%; accent-color: #BAC0C8; }
+  select { width: 100%; background: rgba(186,192,200,0.08); color: white; border: 1px solid rgba(186,192,200,0.25); border-radius: 8px; padding: 8px; font-size: 13px; margin-bottom: 10px; }
+  select option { background: #111; }
+  .btn-row { display: flex; gap: 10px; }
+  .g-btn { flex: 1; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; }
+  .g-btn.selected { background: #BAC0C8; color: #000; border: none; }
+  .g-btn:not(.selected) { background: transparent; color: #BAC0C8; border: 1px solid rgba(186,192,200,0.3); }
+  .taxas-box { background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.15); border-radius: 10px; padding: 12px; }
+  .taxas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .taxas-header label { color: #BAC0C8; font-size: 13px; font-weight: 600; }
+  .toggle-btn { width: 44px; height: 24px; border-radius: 12px; border: none; cursor: pointer; position: relative; transition: 0.2s; background: #BAC0C8; }
+  .toggle-btn .thumb { width: 18px; height: 18px; border-radius: 50%; background: #000; position: absolute; top: 3px; transition: 0.2s; left: 23px; }
+  .toggle-btn.off { background: rgba(186,192,200,0.2); }
+  .toggle-btn.off .thumb { left: 3px; background: #BAC0C8; }
+  .taxa-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+  .taxa-row span:first-child { color: rgba(186,192,200,0.6); font-size: 12px; }
+  .taxa-row span:last-child { color: #BAC0C8; font-size: 12px; }
+  .taxa-total { display: flex; justify-content: space-between; border-top: 1px solid rgba(186,192,200,0.2); padding-top: 4px; margin-top: 4px; }
+  .taxa-total span:first-child { color: #BAC0C8; font-size: 12px; font-weight: 700; }
+  .taxa-total span:last-child { color: white; font-size: 12px; font-weight: 700; }
+  .resumo-box { background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.2); border-radius: 16px; padding: 20px; margin-top: 16px; }
+  .extras-inner { background: rgba(186,192,200,0.04); border: 1px solid rgba(186,192,200,0.12); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+  .extras-title { color: #BAC0C8; font-size: 13px; font-weight: 700; }
+  .extras-label { color: #BAC0C8; font-size: 13px; font-weight: 600; }
+  .extras-val { color: white; font-size: 13px; font-weight: 700; }
+  .extras-hint { color: rgba(186,192,200,0.5); font-size: 11px; margin: 2px 0 0; }
+  .resumo-title { color: #BAC0C8; font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .resumo-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .resumo-row span:first-child { color: rgba(186,192,200,0.7); font-size: 13px; }
+  .resumo-row span:last-child { color: white; font-size: 13px; font-weight: 600; }
+  .resumo-total { border-top: 1px solid rgba(186,192,200,0.2); padding-top: 12px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }
+  .resumo-total span:first-child { color: white; font-weight: 700; font-size: 15px; }
+  .resumo-total span:last-child { color: #BAC0C8; font-weight: 800; font-size: 22px; }
+  .resumo-sub { color: rgba(186,192,200,0.6); font-size: 11px; margin-top: 8px; text-align: center; }
+
+  /* ── PARCELAS ── */
+  .setor-btn { padding: 10px 14px; border-radius: 10px; border-left: 4px solid rgba(186,192,200,0.2); border-top: none; border-right: none; border-bottom: none; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; transition: 0.15s; background: rgba(186,192,200,0.05); width: 100%; margin-bottom: 6px; }
+  .setor-btn:last-child { margin-bottom: 0; }
+  .setor-btn.active { border-left-color: #BAC0C8; background: rgba(186,192,200,0.12); }
+  .setor-btn .nome { color: white; font-size: 13px; font-weight: 400; }
+  .setor-btn.active .nome { font-weight: 700; }
+  .setor-btn .precos { text-align: right; }
+  .setor-btn .precos p { margin: 0; }
+  .setor-btn .precos .p-int { color: #BAC0C8; font-size: 12px; }
+  .setor-btn .precos .p-mei { color: rgba(186,192,200,0.5); font-size: 11px; }
+  .tipo-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tipo-btn { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid rgba(186,192,200,0.25); cursor: pointer; font-weight: 700; font-size: 13px; background: transparent; color: #BAC0C8; transition: 0.2s; }
+  .tipo-btn.active { background: #BAC0C8; color: #000; border-color: #BAC0C8; }
+  .qtd-row { margin-bottom: 12px; }
+  .qtd-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .qtd-header span:first-child { color: #BAC0C8; font-size: 13px; font-weight: 700; }
+  .qtd-header span:last-child { color: white; font-size: 13px; font-weight: 700; }
+  .qtd-hint { color: rgba(186,192,200,0.4); font-size: 11px; margin: 4px 0 0; }
+  .taxa-toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(186,192,200,0.05); border-radius: 10px; margin-bottom: 12px; }
+  .taxa-toggle-row label { color: #BAC0C8; font-size: 13px; font-weight: 600; }
+  .breakdown { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+  .bd-row { display: flex; justify-content: space-between; }
+  .bd-row span:first-child { color: rgba(186,192,200,0.6); font-size: 12px; }
+  .bd-row span:last-child { color: #BAC0C8; font-size: 12px; }
+  .bd-total { display: flex; justify-content: space-between; border-top: 1px solid rgba(186,192,200,0.2); padding-top: 6px; margin-top: 2px; }
+  .bd-total span:first-child { color: white; font-size: 13px; font-weight: 700; }
+  .bd-total span:last-child { color: #BAC0C8; font-size: 13px; font-weight: 700; }
+  .parcelas-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 12px; }
+  .parcela-btn { padding: 8px 4px; border-radius: 10px; border-top: 3px solid rgba(186,192,200,0.15); border-left: none; border-right: none; border-bottom: none; cursor: pointer; text-align: center; transition: 0.15s; background: rgba(186,192,200,0.05); }
+  .parcela-btn.active { border-top-color: #BAC0C8; background: rgba(186,192,200,0.12); }
+  .parcela-btn .pn { color: white; font-size: 13px; font-weight: 700; margin: 0; }
+  .parcela-btn .pj-s { color: rgb(134,239,172); font-size: 9px; margin: 2px 0 0; font-weight: 600; }
+  .parcela-btn .pj-c { color: rgb(252,165,165); font-size: 9px; margin: 2px 0 0; font-weight: 600; }
+  .resultado-box { border-radius: 12px; padding: 16px; }
+  .resultado-box.sem-juros { background: rgba(186,192,200,0.06); border: 1px solid rgba(186,192,200,0.25); }
+  .resultado-box.com-juros { background: rgba(252,165,165,0.05); border: 1px solid rgba(252,165,165,0.2); }
+  .res-label { font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+  .sem-juros .res-label { color: rgb(134,239,172); }
+  .com-juros .res-label { color: rgb(252,165,165); }
+  .res-parcela { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .res-parcela span:first-child { color: #BAC0C8; font-size: 13px; }
+  .res-parcela span:last-child { color: white; font-size: 28px; font-weight: 800; }
+  .res-total { display: flex; justify-content: space-between; border-top: 1px solid rgba(186,192,200,0.15); padding-top: 10px; margin-top: 4px; }
+  .res-total span:first-child { color: white; font-size: 13px; font-weight: 700; }
+  .sem-juros .res-total span:last-child { color: rgb(134,239,172); font-size: 13px; font-weight: 700; }
+  .com-juros .res-total span:last-child { color: rgb(252,165,165); font-size: 13px; font-weight: 700; }
+  .pix-box { margin-top: 10px; background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.25); border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .pix-left p:first-child { color: rgb(253,224,71); font-size: 13px; font-weight: 700; margin: 0 0 2px; }
+  .pix-left p:last-child { color: rgba(186,192,200,0.5); font-size: 11px; margin: 0; }
+  .pix-val { color: rgb(253,224,71); font-size: 18px; font-weight: 800; }
+  .disclaimer { background: rgba(186,192,200,0.04); border: 1px solid rgba(186,192,200,0.1); border-radius: 12px; padding: 12px; margin-top: 12px; }
+  .disclaimer p { color: rgba(186,192,200,0.5); font-size: 11px; margin: 0; }
+
+  /* ── REVENDA ── */
+  .alerta-vermelho { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.35); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .alerta-vermelho .titulo { color: rgb(252,165,165); font-weight: 700; font-size: 13px; margin: 0 0 6px; }
+  .alerta-vermelho .texto { color: rgb(254,226,226); font-size: 12px; margin: 0; }
+
+  .r-card { background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.2); border-radius: 14px; padding: 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; }
+  .r-label { color: #BAC0C8; font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; }
+  .r-tipo-row { display: flex; gap: 8px; }
+  .r-tipo-btn { flex: 1; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; transition: 0.2s; border: 1px solid rgba(186,192,200,0.25); background: transparent; color: #BAC0C8; }
+  .r-tipo-btn.active { background: #BAC0C8; color: #000; border-color: #BAC0C8; }
+  .r-select { width: 100%; background: rgba(186,192,200,0.08); color: white; border: 1px solid rgba(186,192,200,0.25); border-radius: 8px; padding: 8px; font-size: 13px; }
+  .r-select option { background: #111; }
+  .r-taxa-row { display: flex; align-items: center; justify-content: space-between; }
+  .r-taxa-row label { color: #BAC0C8; font-size: 13px; font-weight: 600; }
+  .preco-oficial-box { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px 14px; }
+  .preco-oficial-box p:first-child { color: rgba(186,192,200,0.5); font-size: 11px; margin: 0 0 2px; }
+  .preco-oficial-box p:last-child { color: #BAC0C8; font-size: 20px; font-weight: 700; margin: 0; }
+  .r-input-preco { width: 100%; background: rgba(186,192,200,0.08); color: #ffffff; border: 1px solid rgba(186,192,200,0.25); border-radius: 8px; padding: 10px; font-size: 16px; outline: none; }
+  .r-input-preco::placeholder { color: rgba(186,192,200,0.3); }
+  .r-input-preco::-webkit-inner-spin-button {
+  background: transparent; /* 👈 tenta matar o branco */
+  border: none;
+  opacity: 1;
+  filter: invert(1); /* 👈 deixa as setas claras no dark */
+}
+
+  .avaliacao-box { border-radius: 12px; padding: 14px; margin-top: 4px; display: none; }
+  .avaliacao-box.justo  { background: rgba(134,239,172,0.08); border: 1px solid rgba(134,239,172,0.3); }
+  .avaliacao-box.caro   { background: rgba(252,165,165,0.08); border: 1px solid rgba(252,165,165,0.3); }
+  .avaliacao-box.suspeito { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); }
+  .aval-emoji { font-size: 24px; margin-bottom: 6px; }
+  .aval-titulo { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .justo .aval-titulo   { color: rgb(134,239,172); }
+  .caro .aval-titulo    { color: rgb(252,165,165); }
+  .suspeito .aval-titulo { color: rgb(253,224,71); }
+  .aval-desc { font-size: 12px; margin: 0; }
+  .justo .aval-desc   { color: rgba(134,239,172,0.8); }
+  .caro .aval-desc    { color: rgba(252,165,165,0.8); }
+  .suspeito .aval-desc { color: rgba(253,224,71,0.8); }
+  .aval-pct { font-size: 20px; font-weight: 800; margin: 8px 0 0; }
+  .justo .aval-pct   { color: rgb(134,239,172); }
+  .caro .aval-pct    { color: rgb(252,165,165); }
+  .suspeito .aval-pct { color: rgb(253,224,71); }
+
+  .checklist-card { background: rgba(186,192,200,0.04); border: 1px solid rgba(186,192,200,0.15); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .checklist-title { color: #BAC0C8; font-weight: 700; font-size: 13px; margin: 0 0 12px; }
+  .check-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; cursor: pointer; }
+  .check-item:last-child { margin-bottom: 0; }
+  .check-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(186,192,200,0.4); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+  .check-item.done .check-circle { background: #BAC0C8; border-color: #BAC0C8; }
+  .check-item.done .check-circle::after { content: '✓'; color: #000; font-size: 11px; font-weight: 700; }
+  .check-text { color: rgba(186,192,200,0.8); font-size: 13px; transition: 0.2s; }
+  .check-item.done .check-text { color: rgba(186,192,200,0.4); text-decoration: line-through; }
+  .checklist-progress { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .checklist-progress span { color: #BAC0C8; font-size: 12px; }
+  .progress-bar-bg { height: 4px; background: rgba(186,192,200,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+  .progress-bar-fill { height: 100%; background: #BAC0C8; border-radius: 2px; transition: width 0.3s; }
+
+  .golpes-card { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.25); border-radius: 14px; padding: 16px; }
+  .golpes-title { color: rgb(252,165,165); font-weight: 700; font-size: 13px; margin: 0 0 12px; }
+  .golpe-item { margin-bottom: 12px; }
+  .golpe-item:last-child { margin-bottom: 0; }
+  .golpe-item .g-titulo { color: rgb(252,165,165); font-size: 13px; font-weight: 700; margin: 0 0 2px; }
+  .golpe-item .g-desc { color: rgb(254,226,226); font-size: 12px; margin: 0; opacity: 0.8; }
+
+  .coming-soon { background: rgba(186,192,200,0.04); border: 1px solid rgba(186,192,200,0.15); border-radius: 14px; padding: 40px 20px; text-align: center; color: #BAC0C8; font-size: 14px; }
+  footer { text-align: center; padding: 24px 16px; color: rgba(186,192,200,0.3); font-size: 11px; border-top: 1px solid rgba(0, 0, 0, 0.1); }
+  .leaflet-control-zoom a { background: rgba(0,0,0,0.9) !important; color: #BAC0C8 !important; border-color: rgba(186,192,200,0.3) !important; }
+  .leaflet-control-attribution { background: rgba(0,0,0,0.7) !important; color: rgba(186,192,200,0.5) !important; font-size: 9px !important; }
+  .leaflet-control-attribution a { color: #BAC0C8 !important; }
+
+  /* ══ GUIA ══ */
+  .g-day-selector { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .g-day-btn { padding: 6px 16px; border-radius: 20px; border: none; cursor: pointer; font-size: 11px; font-weight: 700; background: rgba(186,192,200,0.15); color: #BAC0C8; transition: 0.2s; }
+  .g-day-btn.active { background: #BAC0C8; color: #000; }
+
+  .g-countdown-strip { display: flex; align-items: center; justify-content: space-between; background: rgba(186,192,200,0.05); border: 1px solid rgba(186,192,200,0.15); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .g-cd-label { color: rgba(186,192,200,0.7); font-size: 11px; font-weight: 600; }
+  .g-cd-nums { display: flex; align-items: baseline; gap: 4px; }
+  .g-cd-nums span { color: white; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .g-cd-nums em { color: #BAC0C8; font-size: 10px; font-style: normal; font-weight: 700; margin-right: 4px; }
+
+  .g-section { background: rgba(186,192,200,0.04); border: 1px solid rgba(186,192,200,0.15); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .g-section-title { color: #BAC0C8; font-size: 13px; font-weight: 700; margin: 0 0 14px; }
+
+  /* Timeline */
+  .g-timeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .g-tl-item { display: flex; gap: 14px; position: relative; padding-bottom: 16px; }
+  .g-tl-item:last-child { padding-bottom: 0; }
+  .g-tl-left { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
+  .g-tl-dot { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; border: 2px solid rgba(186,192,200,0.3); background: rgba(186,192,200,0.07); z-index: 1; }
+  .g-tl-dot.army { border-color: #BAC0C8; background: rgba(186,192,200,0.12); }
+  .g-tl-dot.show { border-color: rgb(134,239,172); background: rgba(134,239,172,0.08); }
+  .g-tl-dot.warn { border-color: rgb(252,165,165); background: rgba(252,165,165,0.08); }
+  .g-tl-dot.tip  { border-color: rgb(253,224,71);  background: rgba(253,224,71,0.08); }
+  .g-tl-connector { width: 2px; flex: 1; background: rgba(186,192,200,0.15); min-height: 12px; }
+  .g-tl-item:last-child .g-tl-connector { display: none; }
+  .g-tl-content { padding-top: 6px; flex: 1; min-width: 0; }
+  .g-tl-time { color: #BAC0C8; font-size: 11px; font-weight: 700; margin: 0 0 2px; letter-spacing: 0.05em; }
+  .g-tl-text { color: white; font-size: 13px; margin: 0; line-height: 1.4; }
+  .g-tl-sub  { color: rgba(186,192,200,0.5); font-size: 11px; margin: 3px 0 0; }
+
+  /* Alerta vermelho */
+  .g-alert-red { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .g-alert-title { color: rgb(252,165,165); font-weight: 700; font-size: 14px; margin: 0 0 8px; }
+  .g-alert-body { color: rgb(254,226,226); font-size: 13px; margin: 0; line-height: 1.5; }
+
+  /* Dica ouro */
+  .g-tip-gold { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .g-tip-title { color: rgb(253,224,71); font-weight: 700; font-size: 14px; margin: 0 0 8px; }
+  .g-tip-body { color: rgb(254,249,195); font-size: 13px; margin: 0; line-height: 1.5; }
+
+  /* Rota */
+  .g-route { display: flex; flex-direction: column; }
+  .g-route-item { display: flex; gap: 12px; align-items: flex-start; }
+  .g-route-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; background: rgba(186,192,200,0.08); border: 2px solid rgba(186,192,200,0.2); flex-shrink: 0; }
+  .g-route-line { width: 2px; height: 20px; background: rgba(186,192,200,0.2); margin: 0 0 0 15px; }
+  .g-route-content { padding: 4px 0 12px; flex: 1; }
+  .g-route-label { color: #BAC0C8; font-size: 13px; font-weight: 600; margin: 0 0 2px; }
+  .g-route-sub { color: rgba(186,192,200,0.5); font-size: 11px; margin: 0; }
+
+  /* Pontos de encontro */
+  .g-meet-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .g-meet-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px; background: rgba(186,192,200,0.04); border: 1px solid rgba(186,192,200,0.1); border-radius: 10px; }
+  .g-meet-icon { font-size: 20px; flex-shrink: 0; }
+  .g-meet-name { color: white; font-size: 13px; font-weight: 600; margin: 0 0 2px; }
+  .g-meet-desc { color: rgba(186,192,200,0.5); font-size: 12px; margin: 0; }
+  .g-uber-tip { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 10px 12px; color: rgb(254,226,226); font-size: 12px; line-height: 1.5; }
+
+  /* Checklist */
+  .g-check-badge { background: rgba(186,192,200,0.12); color: #BAC0C8; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .g-progress-bg { height: 4px; background: rgba(186,192,200,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 14px; }
+  .g-progress-fill { height: 100%; background: #BAC0C8; border-radius: 2px; transition: width 0.35s ease; }
+  .g-checklist { display: flex; flex-direction: column; gap: 6px; }
+  .g-check-btn { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: none; border-left: 3px solid rgba(186,192,200,0.2); cursor: pointer; text-align: left; background: rgba(186,192,200,0.05); transition: all 0.2s; width: 100%; }
+  .g-check-btn.done { background: rgba(186,192,200,0.1); border-left-color: #BAC0C8; }
+  .g-check-btn .g-check-icon { font-size: 20px; flex-shrink: 0; }
+  .g-check-btn .g-check-label { color: white; font-size: 13px; font-weight: 500; flex: 1; transition: 0.2s; }
+  .g-check-btn.done .g-check-label { color: rgba(186,192,200,0.45); text-decoration: line-through; }
+  .g-check-btn .g-check-state { font-size: 18px; flex-shrink: 0; }
+  .g-reset-btn { display: block; width: 100%; margin-top: 12px; padding: 8px; background: transparent; border: 1px solid rgba(186,192,200,0.15); border-radius: 8px; color: rgba(186,192,200,0.5); font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+  .g-reset-btn:hover { background: rgba(186,192,200,0.07); color: #BAC0C8; }
+
+  /* Accordions */
+  .g-accordions { display: flex; flex-direction: column; gap: 8px; }
+  .g-accordion { border: 1px solid rgba(186,192,200,0.15); border-radius: 12px; overflow: hidden; }
+  .g-accordion-header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; background: rgba(186,192,200,0.04); width: 100%; border: none; text-align: left; transition: background 0.2s; }
+  .g-accordion-header:hover { background: rgba(186,192,200,0.08); }
+  .g-accordion-icon { font-size: 18px; flex-shrink: 0; }
+  .g-accordion-title { color: #BAC0C8; font-size: 13px; font-weight: 700; flex: 1; }
+  .g-accordion-arrow { color: rgba(186,192,200,0.5); font-size: 12px; transition: transform 0.25s; }
+  .g-accordion.open .g-accordion-arrow { transform: rotate(180deg); }
+  .g-accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .g-accordion.open .g-accordion-body { max-height: 600px; }
+  .g-accordion-inner { padding: 0 14px 14px; border-top: 1px solid rgba(186,192,200,0.1); }
+  .g-accordion-inner p { color: rgba(186,192,200,0.8); font-size: 13px; margin: 10px 0 0; line-height: 1.6; }
+  .g-accordion-inner ul { margin: 10px 0 0; padding-left: 16px; }
+  .g-accordion-inner li { color: rgba(186,192,200,0.8); font-size: 13px; margin-bottom: 6px; line-height: 1.5; }
+  .g-accordion-inner li:last-child { margin-bottom: 0; }
+  .g-accordion-inner strong { color: white; }
+</style>
+</head>
+<body
+style="
+  min-height: 100vh;
+  background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url('logo--desktop.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: rgb(255, 255, 255);
+  font-family: system-ui, sans-serif;">
+
+<div style="
+  position: fixed;
+  top: 30px;
+  left: 30px;
+  z-index: 999;
+"
+>
+</div>
+
+<header>
+  <div class="badge"><span>æspa LIVE TOUR - SYNK : COMPLæXITY 2026</span></div>
+  <h1>æspa Sync <span class="sp">SP</span></h1>
+  <p class="subtitle">4 de Setembro - Arena Pacæmbu</p>
+</header>
+
+<nav id="nav">
+  <button data-tab="mapa" class="active">
+  <span class="emoji">🗺️</span> Mapa
+</button>
+
+<button data-tab="gastos">
+  <span class="emoji">💰</span> Gastos
+</button>
+
+<button data-tab="parcelas">
+  <span class="emoji">🎟️</span> Parcelas
+</button>
+
+<button data-tab="revenda">
+  <span class="emoji">🔍</span> Revenda
+</button>
+
+<button data-tab="guia">
+  <span class="emoji">📋</span> Guia
+</button>
+</nav>
+
+<main>
+
+  <!-- ══ MAPA ══ -->
+  <div class="tab-content active" id="tab-mapa">
+    <div class="countdown-box">
+      <p class="countdown-label">æspa LIVE TOUR · ARENA PACÆMBU</p>
+      <p class="show-title">Show único — 4 de setembro de 2026</p>
+      <div class="cd-grid">
+        <div class="cd-cell"><p class="cd-num" id="cd-dias">--</p><p class="cd-lbl">dias</p></div>
+        <div class="cd-cell"><p class="cd-num" id="cd-horas">--</p><p class="cd-lbl">horas</p></div>
+        <div class="cd-cell"><p class="cd-num" id="cd-min">--</p><p class="cd-lbl">min</p></div>
+        <div class="cd-cell"><p class="cd-num" id="cd-seg">--</p><p class="cd-lbl">seg</p></div>
+      </div>
+    </div>
+    <div class="mapa-card">
+      <div class="aviso"><p>⚠️ As rotas são sugestões baseadas em dados estáticos. Confirme sempre pelos apps oficiais: <strong>Metrô SP</strong> e <strong>ViaQuatro</strong>. Horários e operação podem variar.</p></div>
+      <p class="busca-label">🏨 Digite o nome ou endereço do seu hotel</p>
+      <p class="busca-dica">Dica: se não encontrar, tente adicionar o bairro. Ex: "Ibis Paulista" ou "Rua Augusta, Consolação"</p>
+      <div class="busca-row">
+        <input id="hotel-input" placeholder="Ex: Uniclass Hotel Pinheiros, Ibis Paulista..." type="text">
+        <button id="btn-buscar">🔍 Buscar</button>
+      </div>
+      <p id="busca-status" style="color:#BAC0C8;font-size:11px;margin-top:6px;min-height:16px;"></p>
+    </div>
+    <div id="map"></div>
+    <div class="legenda">
+      <div class="leg-item"><span>🏟️</span><span>Arena Pacæmbu — local do show</span></div>
+      <div class="leg-item"><span>⭐</span><span>Estação mais próxima (L2)</span></div>
+      <div class="leg-item"><span>🚇</span><span>Estações de metrô</span></div>
+      <div class="leg-item"><span>🏨</span><span>Seu hotel (após busca)</span></div>
+      <div class="leg-item wide"><span>━━</span><span>Distância aproximada (não é o trajeto do metrô)</span></div>
+    </div>
+    <div class="rota-hint"><p>🍋 Digite o nome do seu hotel para ver a melhor rota passo a passo</p></div>
+  </div>
+
+  <!-- ══ GASTOS ══ -->
+  <div class="tab-content" id="tab-gastos">
+    <p class="hint">Calcule o custo estimado da sua viagem para o show.</p>
+    <div class="card-gastos">
+      <div>
+        <div class="row-label"><label>👥 Número de pessoas</label><span id="lbl-pessoas">2 pessoa(s)</span></div>
+        <input type="range" id="sl-pessoas" min="1" max="10" step="1" value="2">
+      </div>
+      <div>
+        <div class="row-label"><label>🏨 Diária do hotel (por quarto)</label><span id="lbl-hotel">R$ 300</span></div>
+        <input type="range" id="sl-hotel" min="0" max="2000" step="50" value="300">
+      </div>
+      <div>
+        <div class="row-label"><label>🌙 Número de noites</label><span id="lbl-noites">2 noite(s)</span></div>
+        <input type="range" id="sl-noites" min="1" max="7" step="1" value="2">
+      </div>
+      <div>
+        <div class="row-label"><label>🚇 Metrô ida+volta</label><span id="lbl-metro">R$ 8/pessoa</span></div>
+        <input type="range" id="sl-metro" min="0" max="50" step="2" value="8">
+      </div>
+      <div>
+        <div class="row-label"><label>🍔 Alimentação por dia</label><span id="lbl-alim">R$ 80/pessoa</span></div>
+        <input type="range" id="sl-alim" min="0" max="300" step="10" value="80">
+      </div>
+      <div>
+        <label style="color:#BAC0C8;font-size:13px;font-weight:600;display:block;margin-bottom:6px;">🎫 Setor do ingresso</label>
+        <select id="sel-setor">
+          <option value="520|260">Arquibancada Norte — Inteira R$ 520 / Meia R$ 260</option>
+          <option value="530|265">Pista — Inteira R$ 530 / Meia R$ 265</option>
+          <option value="740|370">Cadeira Leste — Inteira R$ 740 / Meia R$ 370</option>
+          <option value="740|370">Cadeira Oeste — Inteira R$ 740 / Meia R$ 370</option>
+          <option value="760|380">Cadeira Oeste Coberta — Inteira R$ 760 / Meia R$ 380</option>
+          <option value="890|445">Pista Premium — Inteira R$ 890 / Meia R$ 445</option>
+          <option value="990|495">PIT A — Inteira R$ 990 / Meia R$ 495</option>
+          <option value="990|495">PIT B — Inteira R$ 990 / Meia R$ 495</option>
+        </select>
+        <div class="btn-row">
+          <button class="g-btn selected" id="g-btn-int">Inteira — <span id="lbl-preco-inteira">R$ 520</span></button>
+          <button class="g-btn" id="g-btn-mei">Meia — <span id="lbl-preco-meia">R$ 260</span></button>
+        </div>
+      </div>
+      <div class="taxas-box">
+        <div class="taxas-header">
+          <label>🧾 Incluir taxas Ticketmaster?</label>
+          <button class="toggle-btn" id="toggle-taxa"><div class="thumb"></div></button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div class="taxa-row"><span>Taxa de serviço (20%)</span><span id="lbl-taxa-servico">R$ 0,00</span></div>
+          <div class="taxa-row"><span>Taxa administração Pacæmbu</span><span id="lbl-taxa-admin">R$ 21,74</span></div>
+          <div class="taxa-total"><span>Total por ingresso</span><span id="lbl-total-ingresso">R$ 0,00</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="resumo-box">
+      <div class="extras-inner">
+        <p class="extras-title">✈️ Extras da viagem</p>
+        <div>
+          <div class="row-label"><label class="extras-label">🚌 Transporte para SP (ida+volta)</label><span class="extras-val" id="lbl-transp">R$ 0</span></div>
+          <input type="range" id="sl-transp" min="0" max="3000" step="50" value="0">
+          <p class="extras-hint">Aviao ~R$800 · Onibus ~R$300 · Carro ~R$200</p>
+        </div>
+        <div>
+          <div class="row-label"><label class="extras-label">🍋 MY Kit (roupa, acessorios, powerbank, capa)</label><span class="extras-val" id="lbl-kit">R$ 0</span></div>
+          <input type="range" id="sl-kit" min="0" max="2000" step="50" value="0">
+        </div>
+        <div>
+          <div class="row-label"><label class="extras-label">🆘 Reserva para emergencias</label><span class="extras-val" id="lbl-emerg">R$ 200</span></div>
+          <input type="range" id="sl-emerg" min="0" max="1000" step="50" value="200">
+        </div>
+      </div>
+      <p class="resumo-title">🍋 Resumo da viagem</p>
+      <div class="resumo-row"><span id="r-ingressos-label">Ingressos (2x inteira)</span><span id="r-ingressos">R$ 0,00</span></div>
+      <div class="resumo-row"><span id="r-hotel-label">Hotel (2 noites)</span><span id="r-hotel">R$ 0,00</span></div>
+      <div class="resumo-row"><span>Metrô/Transporte</span><span id="r-metro">R$ 0,00</span></div>
+      <div class="resumo-row"><span id="r-alim-label">Alimentação</span><span id="r-alim">R$ 0,00</span></div>
+      <div class="resumo-row"><span>Transporte para SP</span><span id="r-transp">R$ 0,00</span></div>
+      <div class="resumo-row"><span>MY Kit</span><span id="r-kit">R$ 0,00</span></div>
+      <div class="resumo-row"><span>Emergencias</span><span id="r-emerg">R$ 0,00</span></div>
+      <div class="resumo-total"><span>Total estimado</span><span id="r-total">R$ 0,00</span></div>
+      <p class="resumo-sub" id="r-sub">...</p>
+    </div>
+  </div>
+
+  <!-- ══ PARCELAS ══ -->
+  <div class="tab-content" id="tab-parcelas">
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <p class="hint">Simule o valor parcelado do seu ingresso com todas as taxas da Ticketmaster.</p>
+      <div class="card">
+        <p class="card-title">🎫 Escolha o setor</p>
+        <div id="setores-list"></div>
+      </div>
+      <div class="card">
+        <p class="card-title">🎟️ Tipo de ingresso</p>
+        <div class="tipo-row">
+          <button class="tipo-btn active" id="p-btn-int">Inteira — <span id="p-lbl-int">R$ 520</span></button>
+          <button class="tipo-btn" id="p-btn-mei">Meia — <span id="p-lbl-mei">R$ 260</span></button>
+        </div>
+        <div class="qtd-row">
+          <div class="qtd-header"><span>👥 Quantidade de ingressos</span><span id="p-lbl-qtd">1 ingresso</span></div>
+          <input type="range" id="p-sl-qtd" min="1" max="4" step="1" value="1">
+          <p class="qtd-hint">Limite: 4 ingressos por CPF</p>
+        </div>
+        <div class="taxa-toggle-row">
+          <label>🧾 Incluir taxas Ticketmaster?</label>
+          <button class="toggle-btn" id="p-toggle-taxa"><div class="thumb"></div></button>
+        </div>
+        <div class="breakdown">
+          <div class="bd-row"><span id="p-bd-base-lbl">Valor base (R$ 520 × 1)</span><span id="p-bd-base">R$ 520,00</span></div>
+          <div class="bd-row" id="p-bd-serv-row"><span>Taxa de serviço (20%)</span><span id="p-bd-serv">R$ 0,00</span></div>
+          <div class="bd-row" id="p-bd-adm-row"><span>Taxa Pacæmbu (× qtd)</span><span id="p-bd-adm">R$ 0,00</span></div>
+          <div class="bd-total"><span>Total com taxas</span><span id="p-bd-total">R$ 520,00</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="card-title">💳 Simulador de parcelamento</p>
+        <div class="parcelas-grid" id="parcelas-grid"></div>
+        <div id="resultado-parcela"></div>
+        <div class="pix-box">
+          <div class="pix-left"><p>⚡ PIX — à vista sem juros</p><p>Aprovação imediata</p></div>
+          <span class="pix-val" id="p-pix-val">R$ 520,00</span>
+        </div>
+      </div>
+      <div class="disclaimer"><p>🍋 Simulação baseada nas condições oficiais da Ticketmaster para o æspa LIVE TOUR. Juros de 1,99%/mês para 4-8x. Valores podem variar — confirme sempre no site oficial antes de comprar.</p></div>
+    </div>
+  </div>
+
+  <!-- ══ REVENDA ══ -->
+  <div class="tab-content" id="tab-revenda">
+    <div style="display:flex;flex-direction:column;gap:0;">
+
+      <!-- Alerta transferência -->
+      <div class="alerta-vermelho">
+        <p class="titulo">⚠️ Transferência bloqueada até agosto de 2026</p>
+        <p class="texto">Os ingressos ficam no aplicativo Quentro. A transferência oficial pelo Quentro só é habilitada próximo ao evento. Qualquer venda agora é feita fora da plataforma — sem garantia.</p>
+      </div>
+
+      <!-- Avaliador de preço -->
+      <div class="r-card">
+        <p class="card-title">🔍 Avaliador de preço</p>
+
+        <div class="r-tipo-row">
+          <button class="r-tipo-btn active" id="r-btn-int">Inteira</button>
+          <button class="r-tipo-btn" id="r-btn-mei">Meia-entrada</button>
+        </div>
+
+        <div>
+          <label class="r-label">Setor</label>
+          <select class="r-select" id="r-sel-setor">
+            <option value="520|260">Arquibancada Norte — inteira R$ 520 / meia R$ 260</option>
+            <option value="530|265">Pista — inteira R$ 530 / meia R$ 265</option>
+            <option value="740|370">Cadeira Leste — inteira R$ 740 / meia R$ 370</option>
+            <option value="740|370">Cadeira Oeste — inteira R$ 740 / meia R$ 370</option>
+            <option value="760|380">Cadeira Oeste Coberta — inteira R$ 760 / meia R$ 380</option>
+            <option value="890|445">Pista Premium — inteira R$ 890 / meia R$ 445</option>
+            <option value="990|495">PIT A — inteira R$ 990 / meia R$ 495</option>
+            <option value="990|495">PIT B — inteira R$ 990 / meia R$ 495</option>
+          </select>
+        </div>
+
+        <div class="r-taxa-row">
+          <label>Comparar com taxa Ticketmaster?</label>
+          <button class="toggle-btn" id="r-toggle-taxa"><div class="thumb"></div></button>
+        </div>
+
+        <div class="preco-oficial-box">
+          <p>Preço oficial (com taxas Ticketmaster)</p>
+          <p id="r-preco-oficial">R$ 541,74</p>
+        </div>
+
+        <div>
+          <label class="r-label">Preço pedido pelo vendedor (R$)</label>
+          <div style="position: relative;">
+  <span style="
+    position:absolute;
+    left:12px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#BAC0C8;
+    font-size:14px;
+  ">R$</span>
+
+  <input 
+    class="r-input-preco" 
+    id="r-preco-vendedor" 
+    type="number" 
+    min="0"
+    step="1"
+    placeholder="800"
+    style="padding-left:40px;"
+  >
+</div>
+        </div>
+
+        <div class="avaliacao-box" id="r-avaliacao"></div>
+      </div>
+
+      <!-- Checklist interativo -->
+      <div class="checklist-card">
+        <p class="checklist-title">✅ Checklist antes de comprar</p>
+        <div class="checklist-progress">
+          <span id="check-progress-txt">0 de 7 concluídos</span>
+          <span id="check-pct">0%</span>
+        </div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="check-bar" style="width:0%"></div></div>
+        <div id="checklist-items">
+          <div class="check-item" data-idx="0">
+            <div class="check-circle"></div>
+            <p class="check-text">Exija ver o ingresso no aplicativo Quentro do vendedor — com nome e setor visíveis</p>
+          </div>
+          <div class="check-item" data-idx="1">
+            <div class="check-circle"></div>
+            <p class="check-text">Confirme que o email cadastrado na conta Ticketmaster/Quentro é real e verificado</p>
+          </div>
+          <div class="check-item" data-idx="2">
+            <div class="check-circle"></div>
+            <p class="check-text">Combine a transferência oficial pelo Quentro antes de qualquer pagamento</p>
+          </div>
+          <div class="check-item" data-idx="3">
+            <div class="check-circle"></div>
+            <p class="check-text">Nunca pague por Pix ou depósito sem garantia de transferência</p>
+          </div>
+          <div class="check-item" data-idx="4">
+            <div class="check-circle"></div>
+            <p class="check-text">Prefira vendedores com histórico em grupos MY verificados (MY Sale Brasil)</p>
+          </div>
+          <div class="check-item" data-idx="5">
+            <div class="check-circle"></div>
+            <p class="check-text">Desconfie de preços muito abaixo do oficial — sinal de golpe</p>
+          </div>
+          <div class="check-item" data-idx="6">
+            <div class="check-circle"></div>
+            <p class="check-text">Grave ou tire print da conversa completa com o vendedor</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Golpes -->
+      <div class="golpes-card">
+        <p class="golpes-title">🚨 Golpes mais comuns</p>
+        <div class="golpe-item">
+          <p class="g-titulo">⚡ Print falso</p>
+          <p class="g-desc">Vendedor manda print do ingresso mas não dá acesso à conta. Print não é ingresso.</p>
+        </div>
+        <div class="golpe-item">
+          <p class="g-titulo">⚡ Ingresso vendido duas vezes</p>
+          <p class="g-desc">O mesmo ingresso é vendido para duas pessoas. Na porta, só uma entra.</p>
+        </div>
+        <div class="golpe-item">
+          <p class="g-titulo">⚡ Conta hackeada</p>
+          <p class="g-desc">Ingresso comprado com cartão roubado e cancelado depois — você fica sem ingresso e sem dinheiro.</p>
+        </div>
+        <div class="golpe-item">
+          <p class="g-titulo">⚡ Transferência que nunca vem</p>
+          <p class="g-desc">Vendedor some após o pagamento antes de transferir na plataforma.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ GUIA ══ -->
+  <div class="tab-content" id="tab-guia">
+
+    <!-- Seletor de dia -->
+    <div class="g-day-selector">
+      <button class="g-day-btn active" data-day="4">4 Set</button>
+    </div>
+
+    <!-- Countdown do Guia -->
+    <div class="g-countdown-strip">
+      <span class="g-cd-label">⏱️ Faltam para o show</span>
+      <div class="g-cd-nums">
+        <span id="g-cd-dias">--</span><em>d</em>
+        <span id="g-cd-horas">--</span><em>h</em>
+        <span id="g-cd-min">--</span><em>m</em>
+        <span id="g-cd-seg">--</span><em>s</em>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="g-section">
+      <p class="g-section-title">🕐 Linha do tempo do dia</p>
+      <div class="g-timeline" id="g-timeline">
+        <!-- gerado por JS -->
+      </div>
+    </div>
+
+    <!-- Aviso metrô -->
+    <div class="g-alert-red">
+      <p class="g-alert-title">⚠️ Atenção: Horário do último metrô</p>
+      <p class="g-alert-body">Linha 2 — Vermelha fecha à <strong>meia-noite</strong> (seg–sex) e à <strong>1h</strong> (sábados). O show termina por volta das 23h. A caminhada até a Higienópolis-Mackenzie leva 15-25min. <strong>Calcule bem o tempo!</strong></p>
+    </div>
+
+    <!-- Dica de ouro -->
+    <div class="g-tip-gold">
+      <p class="g-tip-title">💡 Dica de ouro — saia mais cedo</p>
+      <p class="g-tip-body">Se você não vai perder o bis por nada, aguenta até o fim! Mas se prefere pegar o metrô tranquila, <strong>saia ~20min antes do fim do show</strong>. Você escuta as últimas músicas saindo e chega na estação antes da avalanche.</p>
+    </div>
+
+    <!-- Rota de saída -->
+    <div class="g-section">
+      <p class="g-section-title">🚶 Rota de saída do Pacæmbu</p>
+      <div class="g-route">
+        <div class="g-route-item">
+          <div class="g-route-dot" style="background:#BAC0C8">🏟️</div>
+          <div class="g-route-content">
+            <p class="g-route-label">Saia pelo portão do seu setor</p>
+            <p class="g-route-sub">Siga as placas — não vá contra o fluxo</p>
+          </div>
+        </div>
+        <div class="g-route-line"></div>
+        <div class="g-route-item">
+          <div class="g-route-dot">🚶</div>
+          <div class="g-route-content">
+            <p class="g-route-label">Caminhe pela Rua Itápolis / Praça Pacaembu</p>
+            <p class="g-route-sub">Fluxo de pedestres organizado pela CET</p>
+          </div>
+        </div>
+        <div class="g-route-line"></div>
+        <div class="g-route-item">
+          <div class="g-route-dot">⏱️</div>
+          <div class="g-route-content">
+            <p class="g-route-label" style="color:rgb(253,224,71)">Conte 15 a 25min de caminhada</p>
+            <p class="g-route-sub">Pós-show o fluxo é intenso — demora mais que na ida!</p>
+          </div>
+        </div>
+        <div class="g-route-line"></div>
+        <div class="g-route-item">
+          <div class="g-route-dot">🚇</div>
+          <div class="g-route-content">
+            <p class="g-route-label" style="color:#BAC0C8">Higienópolis-Mackenzie (L2)</p>
+            <p class="g-route-sub">Entre, valide o bilhete e pegue sentido Ana Rosa ou Consolação</p>
+          </div>
+        </div>
+        <div class="g-route-line"></div>
+        <div class="g-route-item">
+          <div class="g-route-dot">⚠️</div>
+          <div class="g-route-content">
+            <p class="g-route-label" style="color:rgb(252,165,165)">Pode haver controle de acesso na plataforma</p>
+            <p class="g-route-sub">Em eventos grandes a CMSP controla o fluxo — aguarde na fila</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pontos de encontro -->
+    <div class="g-section">
+      <p class="g-section-title">📍 Pontos de encontro pós-show</p>
+      <div class="g-meet-grid">
+        <div class="g-meet-item">
+          <span class="g-meet-icon">🏪</span>
+          <div>
+            <p class="g-meet-name">Praça Charles Miller
+</p>
+            <p class="g-meet-desc">Espaço amplo em frente ao estádio — fácil de localizar</p>
+          </div>
+        </div>
+        <div class="g-meet-item">
+          <span class="g-meet-icon">🚇</span>
+          <div>
+            <p class="g-meet-name">Estação Clínicas (saguão)</p>
+            <p class="g-meet-desc">Dentro da estação — seguro antes de pegar o metrô</p>
+          </div>
+        </div>
+        <div class="g-meet-item">
+          <span class="g-meet-icon">📱</span>
+          <div>
+            <p class="g-meet-name">Av. Pacaembu (após cruzamento)</p>
+            <p class="g-meet-desc">Longe do bloqueio da CET — mais fácil chamar Uber/99</p>
+          </div>
+        </div>
+      </div>
+      <div class="g-uber-tip">
+        🚗 <strong>Uber/99 na porta do estádio é quase impossível</strong> — a CET bloqueia o acesso. Caminhe pelo menos 10min antes de chamar o carro.
+      </div>
+    </div>
+
+    <!-- Checklist do dia -->
+    <div class="g-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <p class="g-section-title" style="margin:0">📋 Checklist do dia</p>
+        <span class="g-check-badge" id="g-check-badge">0/10</span>
+      </div>
+      <div class="g-progress-bg"><div class="g-progress-fill" id="g-progress-fill" style="width:0%"></div></div>
+      <div class="g-checklist" id="g-checklist">
+        <!-- gerado por JS -->
+      </div>
+      <button class="g-reset-btn" id="g-reset-btn">↺ Resetar checklist</button>
+    </div>
+
+    <!-- Accordions de dicas -->
+    <div class="g-section">
+      <p class="g-section-title">💡 Dicas essenciais</p>
+      <div class="g-accordions" id="g-accordions">
+        <!-- gerado por JS -->
+      </div>
+    </div>
+
+  </div><!-- /tab-guia -->
+
+</main>
+<footer>Feito por MY para MY 🍋</footer>
+
+<script>
+// ══ NAV ══
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'mapa' && !mapInited) initMap();
+  });
+});
+
+// ══ COUNTDOWN ══
+const TARGET = new Date('2026-09-04T21:00:00-03:00');
+function pad(n){ return String(n).padStart(2,'0'); }
+function updateCountdown(){
+  const diff = TARGET - new Date();
+  if(diff<=0){['cd-dias','cd-horas','cd-min','cd-seg'].forEach(id=>document.getElementById(id).textContent='00');return;}
+  document.getElementById('cd-dias').textContent  = pad(Math.floor(diff/86400000));
+  document.getElementById('cd-horas').textContent = pad(Math.floor((diff%86400000)/3600000));
+  document.getElementById('cd-min').textContent   = pad(Math.floor((diff%3600000)/60000));
+  document.getElementById('cd-seg').textContent   = pad(Math.floor((diff%60000)/1000));
+}
+setInterval(updateCountdown,1000); updateCountdown();
+
+// ══ MAPA ══
+let mapInited=false,map,hotelMarker,routeLine;
+const PACEMBU=[-23.548389, -46.665806];
+const NEAREST={name:'Clínicas (L2)',ll:[-23.553532827152104, -46.67087644353177]};
+const stations=[
+  {name:'Clínicas',ll:[-23.553532827152104, -46.67087644353177]},
+  {name:'Higienópolis',ll:[-23.547725715876407, -46.65252136828693]},{name:'Sumaré',ll:[-23.549666530295333, -46.67792689079794]},
+  {name:'Consolação',ll:[-23.5577249359951, -46.66061273804851]},{name:'Oscar Freire',ll:[-23.55942141457385, -46.672133663848946]},
+  {name:'República (L3/L4)',ll:[-23.542873120153175, -46.64328277334319]},{name:'Trianon - Masp',ll:[-23.56153360885658, -46.65314161679564]},
+];
+function makeIcon(e,s){return L.divIcon({html:`<div style="font-size:${s}px;filter:drop-shadow(0 2px 6px rgba(186,192,200,0.7));line-height:1">${e}</div>`,iconSize:[s,s],iconAnchor:[s/2,s],className:''});}
+function initMap(){
+  mapInited=true;
+  map=L.map('map',{zoomControl:true,scrollWheelZoom:false}).setView(PACEMBU,14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+  L.marker(PACEMBU,{icon:makeIcon('🏟️',38)}).addTo(map).bindPopup('<b>Arena Pacæmbu</b><br>Show æspa 04/09/2026 🍋');
+  L.marker(NEAREST.ll,{icon:makeIcon('⭐',28)}).addTo(map).bindPopup(`<b>${NEAREST.name}</b><br>Estação mais próxima`);
+  stations.forEach(st=>L.marker(st.ll,{icon:makeIcon('🚇',20)}).addTo(map).bindPopup(`<b>${st.name}</b>`));
+}
+window.addEventListener('load',initMap);
+document.getElementById('btn-buscar').addEventListener('click',buscarHotel);
+document.getElementById('hotel-input').addEventListener('keydown',e=>{if(e.key==='Enter')buscarHotel();});
+async function buscarHotel(){
+  const q=document.getElementById('hotel-input').value.trim();
+  const status=document.getElementById('busca-status');
+  if(!q)return; status.textContent='🔍 Buscando...';
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' São Paulo')}&format=json&limit=1`,{headers:{'Accept-Language':'pt-BR'}});
+    const data=await res.json();
+    if(!data.length){status.textContent='❌ Não encontrado. Tente ser mais específico.';return;}
+    const ll=[parseFloat(data[0].lat),parseFloat(data[0].lon)];
+    if(hotelMarker)map.removeLayer(hotelMarker);
+    if(routeLine)map.removeLayer(routeLine);
+    hotelMarker=L.marker(ll,{icon:makeIcon('🏨',28)}).addTo(map).bindPopup(`<b>Seu hotel</b><br>${data[0].display_name.split(',').slice(0,3).join(', ')}`).openPopup();
+    routeLine=L.polyline([ll,NEAREST.ll,PACEMBU],{color:'#BAC0C8',weight:2,dashArray:'6 4',opacity:0.7}).addTo(map);
+    map.fitBounds(L.latLngBounds([ll,NEAREST.ll,PACEMBU]).pad(0.15));
+    const dist=map.distance(ll,NEAREST.ll);
+    status.textContent=`✅ Hotel encontrado! ~${dist<1000?Math.round(dist)+'m':(dist/1000).toFixed(1)+'km'} da estação ${NEAREST.name}`;
+  }catch(e){status.textContent='❌ Erro na busca. Verifique sua conexão.';}
+}
+
+// ══ GASTOS ══
+let gTaxasOn=true,gTipo='inteira';
+const fmt=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function gGetSetor(){const v=document.getElementById('sel-setor').value.split('|');return{inteira:+v[0],meia:+v[1]};}
+function calcular(){
+  const pessoas=+document.getElementById('sl-pessoas').value,hotel=+document.getElementById('sl-hotel').value,
+        noites=+document.getElementById('sl-noites').value,metro=+document.getElementById('sl-metro').value,
+        alim=+document.getElementById('sl-alim').value,transp=+document.getElementById('sl-transp').value,
+        kit=+document.getElementById('sl-kit').value,emerg=+document.getElementById('sl-emerg').value;
+  const setor=gGetSetor(),base=gTipo==='inteira'?setor.inteira:setor.meia;
+  const taxaServ=gTaxasOn?base*0.20:0,taxaAdmin=gTaxasOn?21.74:0,totalIng=base+taxaServ+taxaAdmin;
+  const tIngressos=totalIng*pessoas,tHotel=hotel*noites,tMetro=metro*pessoas;
+  const dias=noites+1,tAlim=alim*pessoas*dias,tTransp=transp*pessoas,tKit=kit*pessoas;
+  const total=tIngressos+tHotel+tMetro+tAlim+tTransp+tKit+emerg;
+  document.getElementById('lbl-pessoas').textContent=pessoas+' pessoa(s)';
+  document.getElementById('lbl-hotel').textContent='R$ '+hotel;
+  document.getElementById('lbl-noites').textContent=noites+' noite(s)';
+  document.getElementById('lbl-metro').textContent='R$ '+metro+'/pessoa';
+  document.getElementById('lbl-alim').textContent='R$ '+alim+'/pessoa';
+  document.getElementById('lbl-transp').textContent='R$ '+transp;
+  document.getElementById('lbl-kit').textContent='R$ '+kit;
+  document.getElementById('lbl-emerg').textContent='R$ '+emerg;
+  document.getElementById('lbl-preco-inteira').textContent='R$ '+setor.inteira;
+  document.getElementById('lbl-preco-meia').textContent='R$ '+setor.meia;
+  document.getElementById('lbl-taxa-servico').textContent=fmt(taxaServ);
+  document.getElementById('lbl-taxa-admin').textContent=gTaxasOn?'R$ 21,74':'R$ 0,00';
+  document.getElementById('lbl-total-ingresso').textContent=fmt(totalIng);
+  const tl=gTipo==='inteira'?'inteira':'meia';
+  document.getElementById('r-ingressos-label').textContent=`Ingressos (${pessoas}x ${tl})`;
+  document.getElementById('r-hotel-label').textContent=`Hotel (${noites} noite(s))`;
+  document.getElementById('r-alim-label').textContent=`Alimentação (${dias} dias)`;
+  document.getElementById('r-ingressos').textContent=fmt(tIngressos);
+  document.getElementById('r-hotel').textContent=fmt(tHotel);
+  document.getElementById('r-metro').textContent=fmt(tMetro);
+  document.getElementById('r-alim').textContent=fmt(tAlim);
+  document.getElementById('r-transp').textContent=fmt(tTransp);
+  document.getElementById('r-kit').textContent=fmt(tKit);
+  document.getElementById('r-emerg').textContent=fmt(emerg);
+  document.getElementById('r-total').textContent=fmt(total);
+  document.getElementById('r-sub').textContent=`${pessoas} pessoa(s) · 1 show · ${noites} noite(s) · ${tl} · ${gTaxasOn?'com':'sem'} taxas`;
+}
+document.querySelectorAll('input[type=range], #sel-setor').forEach(el=>el.addEventListener('input',calcular));
+document.getElementById('g-btn-int').addEventListener('click',()=>{gTipo='inteira';document.getElementById('g-btn-int').classList.add('selected');document.getElementById('g-btn-mei').classList.remove('selected');calcular();});
+document.getElementById('g-btn-mei').addEventListener('click',()=>{gTipo='meia';document.getElementById('g-btn-mei').classList.add('selected');document.getElementById('g-btn-int').classList.remove('selected');calcular();});
+document.getElementById('toggle-taxa').addEventListener('click',()=>{gTaxasOn=!gTaxasOn;document.getElementById('toggle-taxa').classList.toggle('off',!gTaxasOn);calcular();});
+calcular();
+
+// ══ PARCELAS ══
+const SETORES=[
+  {nome:'Arquibancada Norte',inteira:520,meia:260},{nome:'Pista',inteira:530,meia:265},
+  {nome:'Cadeira Leste',inteira:740,meia:370},{nome:'Cadeira Oeste',inteira:740,meia:370},
+  {nome:'Cadeira Oeste Coberta',inteira:760,meia:380},{nome:'Pista Premium',inteira:890,meia:445},
+  {nome:'PIT A',inteira:990,meia:495},{nome:'PIT B',inteira:990,meia:495},
+];
+const JUROS=0.0199, MAX_SJ=3;
+let pSetorIdx=0,pTipo='inteira',pQtd=1,pTaxasOn=true,pParcelas=1;
+
+function renderSetores(){
+  const el=document.getElementById('setores-list'); el.innerHTML='';
+  SETORES.forEach((s,i)=>{
+    const btn=document.createElement('button');
+    btn.className='setor-btn'+(i===pSetorIdx?' active':'');
+    btn.innerHTML=`<span class="nome">${s.nome}</span><div class="precos"><p class="p-int">Inteira ${fmt(s.inteira)}</p><p class="p-mei">Meia ${fmt(s.meia)}</p></div>`;
+    btn.addEventListener('click',()=>{pSetorIdx=i;atualizarParcelas();});
+    el.appendChild(btn);
+  });
+}
+function renderParcelasGrid(){
+  const grid=document.getElementById('parcelas-grid'); grid.innerHTML='';
+  for(let n=1;n<=8;n++){
+    const sj=n<=MAX_SJ;
+    const btn=document.createElement('button');
+    btn.className='parcela-btn'+(n===pParcelas?' active':'');
+    btn.innerHTML=`<p class="pn">${n}x</p><p class="${sj?'pj-s':'pj-c'}">${sj?'sem juros':'+juros'}</p>`;
+    btn.addEventListener('click',()=>{pParcelas=n;atualizarParcelas();});
+    grid.appendChild(btn);
+  }
+}
+function calcParcela(total,n){
+  if(n<=MAX_SJ)return{parcela:total/n,totalFinal:total,semJuros:true};
+  const parcela=total*(JUROS*Math.pow(1+JUROS,n))/(Math.pow(1+JUROS,n)-1);
+  return{parcela,totalFinal:parcela*n,semJuros:false};
+}
+function atualizarParcelas(){
+  const s=SETORES[pSetorIdx],base=pTipo==='inteira'?s.inteira:s.meia;
+  const taxaServ=pTaxasOn?base*0.20:0,taxaAdm=pTaxasOn?21.74*pQtd:0;
+  const total=(base+taxaServ)*pQtd+taxaAdm;
+  document.getElementById('p-lbl-int').textContent=fmt(s.inteira);
+  document.getElementById('p-lbl-mei').textContent=fmt(s.meia);
+  document.getElementById('p-btn-int').classList.toggle('active',pTipo==='inteira');
+  document.getElementById('p-btn-mei').classList.toggle('active',pTipo==='meia');
+  document.getElementById('p-lbl-qtd').textContent=pQtd+(pQtd===1?' ingresso':' ingressos');
+  document.getElementById('p-toggle-taxa').classList.toggle('off',!pTaxasOn);
+  document.getElementById('p-bd-base-lbl').textContent=`Valor base (${fmt(base)} × ${pQtd})`;
+  document.getElementById('p-bd-base').textContent=fmt(base*pQtd);
+  document.getElementById('p-bd-serv').textContent=fmt(taxaServ*pQtd);
+  document.getElementById('p-bd-adm').textContent=fmt(taxaAdm);
+  document.getElementById('p-bd-serv-row').style.opacity=pTaxasOn?'1':'0.3';
+  document.getElementById('p-bd-adm-row').style.opacity=pTaxasOn?'1':'0.3';
+  document.getElementById('p-bd-total').textContent=fmt(total);
+  document.querySelectorAll('.setor-btn').forEach((b,i)=>b.classList.toggle('active',i===pSetorIdx));
+  document.querySelectorAll('.parcela-btn').forEach((b,i)=>b.classList.toggle('active',i+1===pParcelas));
+  const {parcela,totalFinal,semJuros}=calcParcela(total,pParcelas);
+  document.getElementById('resultado-parcela').innerHTML=`
+    <div class="resultado-box ${semJuros?'sem-juros':'com-juros'}">
+      <p class="res-label">${semJuros?'✅ Parcelamento sem juros':'⚠️ Parcelamento com juros (1,99%/mês)'}</p>
+      <div class="res-parcela"><span>${pParcelas}x de</span><span>${fmt(parcela)}</span></div>
+      <div class="res-total"><span>Total a pagar</span><span>${fmt(totalFinal)}</span></div>
+    </div>`;
+  document.getElementById('p-pix-val').textContent=fmt(total);
+}
+document.getElementById('p-btn-int').addEventListener('click',()=>{pTipo='inteira';atualizarParcelas();});
+document.getElementById('p-btn-mei').addEventListener('click',()=>{pTipo='meia';atualizarParcelas();});
+document.getElementById('p-sl-qtd').addEventListener('input',e=>{pQtd=+e.target.value;atualizarParcelas();});
+document.getElementById('p-toggle-taxa').addEventListener('click',()=>{pTaxasOn=!pTaxasOn;atualizarParcelas();});
+renderSetores(); renderParcelasGrid(); atualizarParcelas();
+
+// ══ REVENDA ══
+const R_SETORES=[
+  {inteira:520,meia:260},{inteira:530,meia:265},{inteira:740,meia:370},{inteira:740,meia:370},
+  {inteira:760,meia:380},{inteira:890,meia:445},{inteira:990,meia:495},{inteira:990,meia:495},
+];
+let rTipo='inteira', rTaxasOn=true;
+
+function rGetBase(){
+  const v=document.getElementById('r-sel-setor').value.split('|');
+  return rTipo==='inteira'?+v[0]:+v[1];
+}
+function rGetOficial(){
+  const base=rGetBase();
+  if(!rTaxasOn) return base;
+  return base + base*0.20 + 21.74;
+}
+function atualizarRevenda(){
+  const oficial=rGetOficial();
+  document.getElementById('r-preco-oficial').textContent=fmt(oficial);
+  const vendedorInput=document.getElementById('r-preco-vendedor').value;
+  const aval=document.getElementById('r-avaliacao');
+  if(!vendedorInput){aval.style.display='none';return;}
+  const vendedor=parseFloat(vendedorInput);
+  if(isNaN(vendedor)||vendedor<=0){aval.style.display='none';return;}
+  const pct=((vendedor-oficial)/oficial)*100;
+  aval.style.display='block';
+  aval.className='avaliacao-box';
+  if(vendedor<oficial*0.85){
+    aval.classList.add('suspeito');
+    aval.innerHTML=`<div class="aval-emoji">⚠️</div><p class="aval-titulo">Preço suspeito — muito abaixo do oficial</p><p class="aval-desc">Preços muito abaixo do oficial são sinal frequente de golpe. Tenha muito cuidado antes de prosseguir.</p><p class="aval-pct">${pct.toFixed(0)}% do preço oficial</p>`;
+  } else if(vendedor<=oficial*1.10){
+    aval.classList.add('justo');
+    aval.innerHTML=`<div class="aval-emoji">✅</div><p class="aval-titulo">Preço justo</p><p class="aval-desc">O valor pedido está próximo do preço oficial. Ainda assim, siga o checklist antes de pagar.</p><p class="aval-pct">+${pct.toFixed(0)}% do preço oficial</p>`;
+  } else {
+    aval.classList.add('caro');
+    aval.innerHTML=`<div class="aval-emoji">💸</div><p class="aval-titulo">Preço acima do oficial</p><p class="aval-desc">O vendedor está pedindo ${pct.toFixed(0)}% a mais que o preço oficial. Avalie se vale a pena.</p><p class="aval-pct">+${pct.toFixed(0)}% do preço oficial</p>`;
+  }
+}
+document.getElementById('r-btn-int').addEventListener('click',()=>{rTipo='inteira';document.getElementById('r-btn-int').classList.add('active');document.getElementById('r-btn-mei').classList.remove('active');atualizarRevenda();});
+document.getElementById('r-btn-mei').addEventListener('click',()=>{rTipo='meia';document.getElementById('r-btn-mei').classList.add('active');document.getElementById('r-btn-int').classList.remove('active');atualizarRevenda();});
+document.getElementById('r-sel-setor').addEventListener('change',atualizarRevenda);
+document.getElementById('r-toggle-taxa').addEventListener('click',()=>{rTaxasOn=!rTaxasOn;document.getElementById('r-toggle-taxa').classList.toggle('off',!rTaxasOn);atualizarRevenda();});
+document.getElementById('r-preco-vendedor').addEventListener('input',atualizarRevenda);
+atualizarRevenda();
+
+// ══ CHECKLIST (revenda) ══
+const totalChecks=7;
+document.querySelectorAll('.check-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    item.classList.toggle('done');
+    const done=document.querySelectorAll('.check-item.done').length;
+    const pct=Math.round(done/totalChecks*100);
+    document.getElementById('check-progress-txt').textContent=`${done} de ${totalChecks} concluídos`;
+    document.getElementById('check-pct').textContent=pct+'%';
+    document.getElementById('check-bar').style.width=pct+'%';
+  });
+});
+
+// ══ GUIA ══
+
+// Countdown espelhado no guia
+const G_TARGET = new Date('2026-09-04T21:00:00-03:00');
+function updateGuiaCd(){
+  const diff = G_TARGET - new Date();
+  if(diff<=0){['g-cd-dias','g-cd-horas','g-cd-min','g-cd-seg'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='00';});return;}
+  const el=n=>document.getElementById(n);
+  if(el('g-cd-dias')) el('g-cd-dias').textContent=pad(Math.floor(diff/86400000));
+  if(el('g-cd-horas'))el('g-cd-horas').textContent=pad(Math.floor((diff%86400000)/3600000));
+  if(el('g-cd-min'))  el('g-cd-min').textContent=pad(Math.floor((diff%3600000)/60000));
+  if(el('g-cd-seg'))  el('g-cd-seg').textContent=pad(Math.floor((diff%60000)/1000));
+}
+setInterval(updateGuiaCd,1000); updateGuiaCd();
+
+// Timeline
+const timeline = [
+  {
+    time: "08:00",
+    text: "MYs começam a se reunir em frente ao Pacaembu",
+    sub: "",
+    type: "army",
+    icon: "🍋"
+  },
+  {
+    time: "12:00",
+    text: "Chegada recomendada para fansite e fanproject",
+    sub: "Melhores posições para fotos",
+    type: "tip",
+    icon: "📸"
+  },
+  {
+    time: "15:00",
+    text: "Abertura oficial dos portões",
+    sub: "Entrada pelos portões do seu setor",
+    type: "army",
+    icon: "🎟️"
+  },
+  {
+    time: "17:00",
+    text: "Chegada recomendada para todos os setores",
+    sub: "Evite o rush do final da tarde",
+    type: "tip",
+    icon: "⏰"
+  },
+  {
+    time: "20:00",
+    text: "Show começa!",
+    sub: "aespa LIVE TOUR — SYNK : COMPLæXITY",
+    type: "show",
+    icon: "🔥" // 👈 O LIMÃO FINAL
+  },
+  {
+    time: "23:00",
+    text: "Encerramento estimado",
+    sub: "",
+    type: "army",
+    icon: "🎤"
+  }
+];
+
+function renderTimeline() {
+  const container = document.getElementById("g-timeline");
+
+  container.innerHTML = timeline.map(item => `
+    <div class="g-tl-item">
+      
+      <div class="g-tl-left">
+        <div class="g-tl-dot ${item.type}">
+          ${item.icon}
+        </div>
+        <div class="g-tl-connector"></div>
+      </div>
+
+      <div class="g-tl-content">
+        <p class="g-tl-time">${item.time}</p>
+        <p class="g-tl-text">${item.text}</p>
+        ${item.sub ? `<p class="g-tl-sub">${item.sub}</p>` : ""}
+      </div>
+
+    </div>
+  `).join("");
+}
+
+// Checklist do Guia
+const G_CHECKS = [
+  {icon:'🎫', label:'Ingresso digital salvo no celular (e screenshot offline)'},
+  {icon:'🔋', label:'Power bank 100% carregado'},
+  {icon:'🔦', label:'Lightstick carregado'},
+  {icon:'🗺️', label:'Screenshot da rota salvo (sem internet)'},
+  {icon:'💧', label:'Garrafa de água e lanche leve'},
+  {icon:'🌧️', label:'Capa de chuva (SP em setembro é imprevisível!)'},
+  {icon:'👟', label:'Roupa e tênis confortável'},
+  {icon:'💳', label:'Cartão e dinheiro para emergências'},
+  {icon:'🪪', label:'Documento de identidade com foto'},
+  {icon:'💊', label:'Medicamentos se necessário'},
+];
+const G_CHECK_KEY = 'guia-checks-v1';
+let gCheckState = JSON.parse(localStorage.getItem(G_CHECK_KEY)||'[]');
+if(!Array.isArray(gCheckState)||gCheckState.length!==G_CHECKS.length) gCheckState=new Array(G_CHECKS.length).fill(false);
+
+function saveGuiaChecks(){ try{localStorage.setItem(G_CHECK_KEY,JSON.stringify(gCheckState));}catch(e){} }
+function renderGuiaChecklist(){
+  const wrap=document.getElementById('g-checklist'); if(!wrap) return; wrap.innerHTML='';
+  G_CHECKS.forEach((c,i)=>{
+    const btn=document.createElement('button');
+    btn.className='g-check-btn'+(gCheckState[i]?' done':'');
+    btn.innerHTML=`<span class="g-check-icon">${c.icon}</span><span class="g-check-label">${c.label}</span><span class="g-check-state">${gCheckState[i]?'✅':'⬜'}</span>`;
+    btn.addEventListener('click',()=>{
+      gCheckState[i]=!gCheckState[i];
+      saveGuiaChecks();
+      renderGuiaChecklist();
+      updateGuiaCheckProgress();
+    });
+    wrap.appendChild(btn);
+  });
+}
+function updateGuiaCheckProgress(){
+  const done=gCheckState.filter(Boolean).length;
+  const total=G_CHECKS.length;
+  const pct=Math.round(done/total*100);
+  const badge=document.getElementById('g-check-badge');
+  const fill=document.getElementById('g-progress-fill');
+  if(badge) badge.textContent=done+'/'+total;
+  if(fill) fill.style.width=pct+'%';
+}
+document.getElementById('g-reset-btn')&&document.getElementById('g-reset-btn').addEventListener('click',()=>{
+  gCheckState=new Array(G_CHECKS.length).fill(false);
+  saveGuiaChecks();
+  renderGuiaChecklist();
+  updateGuiaCheckProgress();
+});
+
+// Accordions
+const G_TIPS = [
+  {
+    icon:'🚇', title:'Como funciona o metrô em dias de show',
+    html:`<ul>
+      <li>A CMSP reforça operação em dias de grandes eventos — trens mais frequentes até as 23h.</li>
+      <li><strong>Estação Clínicas (L2)</strong> é a estação mais próxima do Pacæmbu (~22min a pé).</li>
+      <li>Tenha o <strong>bilhete carregado antes do show</strong> — as filas das máquinas explodem no pós-evento.</li>
+      <li>Evite a estação logo no encerramento. Aguarde ~30min em ponto de encontro seguro.</li>
+    </ul>`
+  },
+  {
+    icon:'🎒', title:'O que levar (e o que NÃO levar)',
+    html:`<ul>
+      <li>✅ <strong>Leve:</strong> mochila pequena, garrafa de água, ingresso no cel + print, power bank, capa de chuva, lancha leve.</li>
+      <li>❌ <strong>Não leve:</strong> mochilas grandes (>30cm), câmeras com lente destacável, guarda-chuva de haste longa, bebidas alcoólicas em embalagem de vidro.</li>
+      <li>🔦 Lightstick é permitido — carregue antes e verifique as regras da æspa no app.</li>
+    </ul>`
+  },
+  {
+    icon:'🏟️', title:'Chegando no Pacæmbu',
+    html:`<ul>
+      <li>Entrada pelo portão do seu setor — veja o mapa no ingresso digital.</li>
+      <li>Chegue com pelo menos <strong>1h30 de antecedência</strong> para evitar filas no acesso.</li>
+      <li>A revista de bolsas pode ser demorada em eventos grandes — calcule o tempo.</li>
+      <li>Não tente entrar por portões de outros setores — você será redirecionado.</li>
+    </ul>`
+  },
+  {
+    icon:'🍔', title:'Alimentação e hidratação',
+    html:`<ul>
+      <li>Praça de alimentação dentro do estádio — preços de evento (caro). Considere comer antes.</li>
+      <li>Garrafa de água plástica lacrada é geralmente permitida (confirme na entrada).</li>
+      <li>Região do Pacæmbu tem opções: padarias e lanchonetes na Rua Itápolis e Av. Pacaembu.</li>
+      <li>Beba água ao longo do dia — shows de k-pop são fisicamente intensos!</li>
+    </ul>`
+  },
+  {
+    icon:'🔒', title:'Segurança e dicas gerais',
+    html:`<ul>
+      <li>Guarde documentos e cartões no fundo da mochila ou em bolso seguro.</li>
+      <li>Nunca deixe pertences sem vigilância, especialmente em aglomerações.</li>
+      <li>Combine um ponto de encontro físico com seu grupo — o sinal de celular é fraco dentro.</li>
+      <li>Em caso de emergência: procure a equipe de segurança com colete identificado ou o posto médico.</li>
+      <li>Não aceite ajuda de pessoas desconhecidas que se oferecem espontaneamente na saída.</li>
+    </ul>`
+  },
+];
+function renderAccordions(){
+  const wrap=document.getElementById('g-accordions'); if(!wrap) return; wrap.innerHTML='';
+  G_TIPS.forEach(tip=>{
+    const acc=document.createElement('div');
+    acc.className='g-accordion';
+    acc.innerHTML=`
+      <button class="g-accordion-header">
+        <span class="g-accordion-icon">${tip.icon}</span>
+        <span class="g-accordion-title">${tip.title}</span>
+        <span class="g-accordion-arrow">▼</span>
+      </button>
+      <div class="g-accordion-body">
+        <div class="g-accordion-inner">${tip.html}</div>
+      </div>`;
+    acc.querySelector('.g-accordion-header').addEventListener('click',()=>{
+      const isOpen=acc.classList.contains('open');
+      document.querySelectorAll('.g-accordion.open').forEach(a=>a.classList.remove('open'));
+      if(!isOpen) acc.classList.add('open');
+    });
+    wrap.appendChild(acc);
+  });
+}
+
+// Inicializa o Guia quando a aba for aberta (ou já estiver ativa)
+function initGuia(){
+  renderTimeline();
+  renderGuiaChecklist();
+  updateGuiaCheckProgress();
+  renderAccordions();
+}
+
+// Hook na navegação
+document.querySelectorAll('nav button').forEach(btn=>{
+  if(btn.dataset.tab==='guia') btn.addEventListener('click', initGuia, {once:true});
+});
+// Se já estiver na aba guia ao carregar (edge case)
+if(document.getElementById('tab-guia').classList.contains('active')) initGuia();
+
+renderTimeline();
+
+const input = document.getElementById("r-preco-vendedor");
+
+input.addEventListener("input", () => {
+  if (input.value < 0) {
+    input.value = 0;
+  }
+});
+
+</script>
+</body>
+</html>
